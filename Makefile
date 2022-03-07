@@ -9,9 +9,12 @@ LDFLAGS =  -g -Wall
 CC = $(CROSS_COMPILE)gcc
 ARCH= arm
 
+
+
 build: $(TARGET)
 
-$(TARGET): clock.o 
+$(TARGET): clock.o \
+LCD_Lib.o LCD_Driver.o LCD_Hw.o lcd_graphic.o font.o
 	$(CC) $(LDFLAGS)   $^ -o $@ 
 
 %.o : %.c
@@ -20,3 +23,6 @@ $(TARGET): clock.o
 .PHONY: clean
 clean:
 	rm -f $(TARGET) *.a *.o *~
+
+
+
