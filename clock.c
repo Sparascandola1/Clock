@@ -15,21 +15,13 @@ volatile int *HEX_ptr1; // virtual address pointer to seven seg HEX0_3
 volatile int *HEX_ptr2; // virtual address pointer to seven seg HEX4_5
 volatile int *SW_ptr;   // virtual address for the Switch port
 volatile int *KEY_ptr;
+volatile int *JP1_ptr;
 int alarmTime;
 
 #define HW_REGS_BASE (ALT_STM_OFST)
 #define HW_REGS_SPAN (0x04000000)
 #define HW_REGS_MASK (HW_REGS_SPAN - 1)
-// Shared Circular Buffer
-// struct CIRCULAR_BUFFER
-// {
-//     int count; // Number of items in the buffer
-//     int lower; // Next slot to read in the buffer
-//     int upper; // Next slot to write in the buffer
-//     int buffer[3];
-// };
 
-// struct CIRCULAR_BUFFER *buffer = NULL;
 /*
  * author: Salvatore Parascandola
  * version: 1.0
@@ -50,8 +42,17 @@ int main(void)
     if ((LW_virtual = map_physical(fd, LW_BRIDGE_BASE, LW_BRIDGE_SPAN)) == NULL)
         return (-1);
 
+    // FPGA Pointer
+    JP1_ptr = (unsigned int *) (LW_virtual + JP1_BASE);
+    *(JP1_ptr + 1) = 0x0000000F;
 
-    // Set virtual address pointer to I/O port for HEX0_3 & HEX4_5
+    for (int x=0; x < 10; ++x){
+        *(JP1_ptr + 0) = x;
+        usleep(1000*1000);
+        printf("BLah BLah ...\n");
+    }
+
+    // Set virtual address pointer to I/O port
     HEX_ptr1 = (unsigned int *)(LW_virtual + HEX3_HEX0_BASE);
     HEX_ptr2 = (unsigned int *)(LW_virtual + HEX5_HEX4_BASE);
     SW_ptr = (unsigned int *)(LW_virtual + SW_BASE);
@@ -101,12 +102,6 @@ int main(void)
         free(LcdCanvas.pFrame);
     }
 
-    // Create shared memory for the Circular Buffer to be shared between the Parent and Child  Processes
-    // buffer = (struct CIRCULAR_BUFFER *)mmap(0, sizeof(buffer), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
-    // buffer->count = 0;
-    // buffer->lower = 0;
-    // buffer->upper = 0;
-
     /*
      * Main program logic:
      * find the system time, parse hour; min; and sec into one string and parse the string into an int
@@ -119,20 +114,6 @@ int main(void)
 
         if (*KEY_ptr == 8)
         {
-
-            // // clear screen
-            // DRAW_Clear(&LcdCanvas, LCD_WHITE);
-
-            // // demo grphic api
-            // DRAW_Rect(&LcdCanvas, 0, 0, LcdCanvas.Width - 1, LcdCanvas.Height - 1, LCD_BLACK); // retangle
-
-            // // demo font
-            // DRAW_PrintString(&LcdCanvas, 40, 5, "Hello", LCD_BLACK, &font_16x16);
-            // DRAW_PrintString(&LcdCanvas, 40, 5 + 10, "from", LCD_BLACK, &font_16x16);
-            // DRAW_PrintString(&LcdCanvas, 40, 5 + 20, "the other", LCD_BLACK, &font_16x16);
-            // DRAW_PrintString(&LcdCanvas, 40, 5 + 30, "side", LCD_BLACK, &font_16x16);
-            // DRAW_Refresh(&LcdCanvas);
-
             setAlarm();
         }
 
@@ -490,29 +471,10 @@ void setAlarm()
 void activeAlarm()
 {
 
-    // int hex4_5 = 0;
-    // int hex0_3 = 0;
-
     int fake = timeParser(88, 88, 88);
 
     while (1)
     {
-
-        // *HEX_ptr1 = 0;
-        // *HEX_ptr2 = 0;
-
-        // hex4_5 = (bcd2SevenSeg(alarmTime / 100000) << 8) |
-        //          (bcd2SevenSeg((alarmTime / 10000) % 10));
-
-        // hex0_3 = (bcd2SevenSeg((alarmTime / 1000) % 10) << 24) |
-        //          (bcd2SevenSeg((alarmTime / 100) % 10) << 16) |
-        //          (bcd2SevenSeg((alarmTime / 10) % 10) << 8) |
-        //          bcd2SevenSeg(alarmTime % 10);
-
-        // *HEX_ptr2 = hex4_5;
-        // *HEX_ptr1 = hex0_3;
-
-        // sleep(2);
 
         *HEX_ptr1 = 0;
         *HEX_ptr2 = 0;
@@ -573,6 +535,7 @@ int timeParser(int hour, int min, int sec)
  */
 int bcd2SevenSeg(int dec)
 {
+
     switch (dec)
     {
     case 0:
